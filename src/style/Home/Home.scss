@@ -1,0 +1,45 @@
+@mixin title($weight) {
+    font-family: "Playfair Display", serif;
+    font-optical-sizing: auto;
+    font-weight: $weight;
+    font-style: normal;
+}
+
+//hero
+.container {
+    .card-title {
+        @include title(800);
+    }
+
+    .card-text {
+        @include title(200);
+
+    }
+    
+
+    div {
+        .nav-link {
+            .btn {
+                @include title(800);
+
+                &:hover {
+                    background-color: #ffffff;
+                    color: #1F4045;
+                }
+            }
+        }
+    }
+
+}
+.text-2{
+    margin-top: 20px;
+    @include title(800);
+    color: #1F4045;
+
+}
+.carousel{
+    width: 500px;
+    height: 500px;
+    margin-top: 5px;
+    transition: opacity 0.5s ease; /* Hiệu ứng chuyển đổi mượt mà */
+}

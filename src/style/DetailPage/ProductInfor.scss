@@ -1,0 +1,11 @@
+@mixin product-name {
+    font-family: "Merriweather Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 100;
+    font-style: normal;
+    color: #1F4045;
+}
+
+.product-description {
+    @include product-name();
+}

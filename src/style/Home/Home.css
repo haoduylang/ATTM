@@ -1,0 +1,28 @@
+.container .card-title {
+  font-family: "Playfair Display", serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}
+.container .card-text {
+  font-family: "Playfair Display", serif;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
+}
+.container div .nav-link .btn {
+  font-family: "Playfair Display", serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}
+.container div .nav-link .btn:hover {
+  background-color: #ffffff;
+  color: #1F4045;
+}
+
+.carousel {
+  width: 400px;
+  height: 300px;
+  margin-bottom: 20px;
+}/*# sourceMappingURL=Home.css.map */

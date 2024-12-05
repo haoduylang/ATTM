@@ -1,0 +1,13 @@
+.navbar {
+  font-family: "Playfair Display", serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+  color: #1F4045;
+}
+.navbar .container .navbar-collapse {
+  font-family: "Montserrat", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}/*# sourceMappingURL=NavBar.css.map */
