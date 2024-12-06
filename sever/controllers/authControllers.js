@@ -1,4 +1,4 @@
-const Users = require('../models/userModel');
+const Users = require('../models/User');
 const bcrypt = require('bcrypt');
 
 const authControllers = {
@@ -20,7 +20,8 @@ const authControllers = {
             res.status(200).json(user);
 
         } catch (error) {
-            return res.status(500).json({ msg: error.message });
+            return res.status(200).json({ msg: error.message });
         }
     }
-}
+};
+module.exports = authControllers;
