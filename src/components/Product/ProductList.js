@@ -1,54 +1,87 @@
-import formatCurrency from "../../utils/formatCurrency";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import { MdOutlineLabelImportant } from "react-icons/md";
 import { BsSuitHeartFill } from "react-icons/bs";
-
-const ProductList = (props) => {
-  const { products } = props;
+import formatCurrency from "../../utils/formatCurrency";
+import "./ProductList.scss"; // Tạo file CSS để thiết kế giao diện
+import { useNavigate } from "react-router-dom";
+const ProductList = () => {
   const navigate = useNavigate();
-
-  const handleProductDetails = (id) => {
+  const handleViewDetails = (id) => {
     navigate(`/product/${id}`);
   };
 
-  return (
-    <div className="product-cards">
-      {products &&
-        products.map((product) => (
-          <div key={`product-${product.id}`} className="card-container">
-            <div className="card">
-              <div className="img-items">
-                <div className="img">
-                  <img src={product.image_url} alt="handmade" className="card-img" />
-                </div>
-                <div className="card-action">
-                  <ul className="card-list">
-                    <li className="list-item" onClick={() => handleProductDetails(product.id)}>
-                      Xem chi tiết
-                      <span style={{ fontSize: "1.125rem" }}>
-                        <MdOutlineLabelImportant />
-                      </span>
-                    </li>
-                    <li className="list-item">
-                      Thêm vào mục yêu thích
-                      <span>
-                        <BsSuitHeartFill />
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+  const [products] = useState([
+    {
+      id: 1,
+      name: "Đèn LED máy bay Mini PIXELSKY",
+      price: 23400,
+      img: "https://via.placeholder.com/150",
+      discount: "42%",
+      sold: "691",
+    },
+    {
+      id: 2,
+      name: "Quần đùi linen Nam",
+      price: 69000,
+      img: "https://via.placeholder.com/150",
+      discount: "54%",
+      sold: "5,1k",
+    },
+    {
+      id: 3,
+      name: "Áo sơ mi Kraft Work",
+      price: 280000,
+      img: "https://via.placeholder.com/150",
+      discount: "3%",
+      sold: "361",
+    },
+    {
+      id: 4,
+      name: "Ốp lưng trò chơi Mario",
+      price: 5000,
+      img: "https://via.placeholder.com/150",
+      discount: "50%",
+      sold: "1,8k",
+    },
+  ]);
 
-              <div className="card-details">
-                <div className="card-details-header">
-                  <h2 className="title">{product.name}</h2>
-                  <p className="price">{formatCurrency(product.price)}</p>
+  return (
+      <div className="product-container">
+        <h1>Danh sách sản phẩm</h1>
+        <div className="product-grid">
+          {products.map((product) => (
+              <div key={product.id} className="product-card">
+                {/* Hình ảnh sản phẩm */}
+                <div className="product-image">
+                  <img src={product.img} alt={product.name} />
+                  {product.discount && (
+                      <span className="product-discount">{product.discount} Giảm</span>
+                  )}
+                </div>
+
+                {/* Thông tin sản phẩm */}
+                <div className="product-info">
+                  <h3 className="product-name">{product.name}</h3>
+                  <p className="product-price">
+                    {formatCurrency(product.price)}
+                  </p>
+                  <p className="product-sold">Đã bán: {product.sold}</p>
+                </div>
+
+                {/* Hành động */}
+                <div className="product-actions">
+                  <button className="detail-button"
+                          onClick={() => handleViewDetails(product.id)} >
+                    Xem chi tiết <MdOutlineLabelImportant />
+                  </button>
+                  <button className="favorite-button">
+                    Thêm vào yêu thích <BsSuitHeartFill />
+                  </button>
                 </div>
               </div>
-            </div>
-          </div>
-        ))}
-    </div>
+          ))}
+        </div>
+      </div>
   );
 };
 

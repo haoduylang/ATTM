@@ -15,6 +15,7 @@ const ProductInfor = ({ product }) => {
   };
   return (
     <>
+
       <div className="container my-5 py-2">
         <div className="row">
           <div className="col-md-6 col-sm-12 py-3">

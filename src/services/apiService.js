@@ -1,15 +1,30 @@
-import axios from "../utils/axiosCustomize";
+import axios from "axios";
 
-const getAllProducts = (paramsString) => {
-  return axios.get(`api/products?${paramsString}`);
+const API_URL = "https://your-api-url.com"; // Thay đổi URL của bạn
+
+// Hàm lấy chi tiết sản phẩm
+export const getProductDetail = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/products/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching product detail:", error);
+    throw error;
+  }
 };
 
-const getDataProduct = (id) => {
-  return axios.get(`api/products/${id}`);
+// Các hàm API khác của bạn
+export const getAllCategories = async () => {
+  const response = await axios.get(`${API_URL}/categories`);
+  return response.data;
 };
 
-const getAllCategories = () => {
-  return axios.get("api/categories");
+export const getAllProducts = async (params) => {
+  const response = await axios.get(`${API_URL}/products`, { params });
+  return response.data;
 };
 
-export { getAllProducts, getDataProduct, getAllCategories };
+export const getDataProduct = async () => {
+  const response = await axios.get(`${API_URL}/products`);
+  return response.data;
+};
