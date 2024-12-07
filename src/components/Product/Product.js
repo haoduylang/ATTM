@@ -19,7 +19,7 @@ function Product() {
     _page: 1,
     _sort: "price",
     _order: "asc",
-  });
+  })
 
   // useEffect(() => {
   //   const fetchProductList = async () => {
