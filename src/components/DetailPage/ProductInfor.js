@@ -1,17 +1,40 @@
-// ProductInfor.js
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { addCart } from "../../redux/action/cartAction";
 import formatCurrency from "../../utils/formatCurrency";
+import axios from "axios";
 
 const ProductInfor = ({ product }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const handleAddToCart = (product) => {
-    dispatch(addCart(product));
-    toast.success("ADD TO BAG SUCCESSFULLY! :3", { autoClose: 1000 });
+  const handleAddToCart = async (product) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        toast.warning("Please login to add products to the cart", { autoClose: 2000 });
+        navigate("/login");
+        return;
+      }
+
+      // Xác minh token với server
+      const response = await axios.get("http://localhost:3000/api/verify-token", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 200) {
+        dispatch(addCart(product));
+        toast.success("Added to cart successfully!", { autoClose: 1000 });
+      }
+    } catch (error) {
+      console.error("Error in verifying token:", error.message);
+      toast.error("Session expired, please login again.", { autoClose: 2000 });
+      localStorage.removeItem("token");
+      navigate("/login");
+    }
   };
 
   return (

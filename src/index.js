@@ -6,15 +6,19 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
 import { ChakraProvider } from "@chakra-ui/react";
-
+import { UserProvider } from "./UserContext";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <Provider store={store}>
     <React.StrictMode>
       <BrowserRouter>
         <ChakraProvider>
-          <Layout />
+          <UserProvider>
+            <Layout />
+          </UserProvider>
+          
         </ChakraProvider>
+        
       </BrowserRouter>
     </React.StrictMode>
   </Provider>

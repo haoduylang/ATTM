@@ -12,6 +12,8 @@ import ContactPage from "./components/ContactPage/ContactPage";
 import Cart from "./components/Cart/Cart"; 
 import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";    
+import AdminDashboard from "./admin/adminDashboard";
+
 function App() {
   return (
     <div className="app-container">
@@ -19,14 +21,15 @@ function App() {
       <div className="main-container">
         <div className="app-content">
           <Routes>
-          <Route path="/" element={<Home />} />  
-          <Route path="/product" element={<ProductList />} />
+            <Route path="/" element={<Home />} />  
+            <Route path="/product" element={<ProductList />} />
             <Route path="/product/:id" element={<DetailPage />} />
             <Route path="/about" element={<Aboutpage />} />
-            <Route path="/contact" element={<ContactPage/>} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/cart" element={<Cart />} /> {/* Trang giỏ hàng */}
+            <Route path="/admin/dashboard" element={<AdminDashboard />} /> {/* Sửa thành element */}
           </Routes>
         </div>
       </div>
