@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom"; // Đảm bảo sử dụng useNavigate
 import { FaSignInAlt, FaUserPlus, FaShoppingCart, FaSignOutAlt } from "react-icons/fa";
 import Button from "react-bootstrap/Button";
 import Collapse from "react-bootstrap/Collapse";
@@ -10,7 +10,7 @@ const Navbar = () => {
   const state = useSelector((state) => state.cart);
   const [open, setOpen] = React.useState(false);
   const { user, setUser } = useContext(UserContext); // Lấy thông tin người dùng từ UserContext
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Sử dụng hook navigate
 
   const handleNavLinkClick = () => {
     setOpen(false);
@@ -18,8 +18,9 @@ const Navbar = () => {
 
   const handleLogout = () => {
     setUser(null); // Xóa thông tin người dùng
-    localStorage.removeItem("user"); // Xóa dữ liệu trong localStorage
-    navigate("/login"); // Chuyển hướng về trang đăng nhập
+    localStorage.removeItem("user"); // Xóa dữ liệu trong localStorage\
+    localStorage.removeItem("token");
+    navigate("/login"); // Chuyển hướng về trang đăng nhập sau khi đăng xuất
   };
 
   return (
@@ -74,7 +75,6 @@ const Navbar = () => {
                       <FaSignOutAlt style={{ marginRight: "5px" }} />
                       Logout
                    </div>
-                   
                   </button>
                   <NavLink
                     to="/cart"
@@ -85,12 +85,11 @@ const Navbar = () => {
                       <FaShoppingCart style={{ marginRight: "5px" }} />
                     Cart ({state.length})
                    </div>
-                    
                   </NavLink>
                 </>
               ) : (
                 <>
-                        <NavLink
+                  <NavLink
                     to="/login"
                     className="btn btn-outline-dark m-2"
                     onClick={handleNavLinkClick}
@@ -109,8 +108,6 @@ const Navbar = () => {
                     <FaUserPlus style={{ marginRight: "5px" }} />
                     Register
                     </div>
-                    
-                    
                   </NavLink>
                 </>
               )}

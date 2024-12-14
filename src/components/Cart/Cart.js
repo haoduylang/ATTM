@@ -6,41 +6,8 @@ import { FaPlus } from "react-icons/fa";
 import { addCart, delCart } from "../../redux/action/cartAction";
 import EmptyCart from "../EmptyCart/EmptyCart";
 import formatCurrency from "../../utils/formatCurrency";
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+
 const Cart = () => {
-
-  const [cartItems, setCartItems] = useState([]);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        // Fetch cart items from API or define them here
-        const fetchCartItems = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                navigate('/login');
-                return;
-            }
-            const response = await axios.get('http://localhost:3000/api/cart', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setCartItems(response.data);
-        };
-        fetchCartItems();
-    }, [navigate]);
-
-    const handleCheckout = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            navigate('/login');
-            return;
-        }
-        // Checkout logic here
-        console.log('Checkout');
-    };
-
-
   let subtotal = 0;
   let shipping = 30000;
   let totalItems = 0;
@@ -53,7 +20,6 @@ const Cart = () => {
   const removeItem = (product) => {
     dispatch(delCart(product));
   };
-  
 
   // Tính tổng giá trị các sản phẩm trong giỏ hàng
   subtotal = state.reduce((total, item) => total + item.price * item.qty, 0);

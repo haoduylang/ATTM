@@ -15,7 +15,7 @@ const ProductInfor = ({ product }) => {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        toast.warning("Please login to add products to the cart", { autoClose: 2000 });
+        toast.warning("Please login to add products to the cart", { autoClose: 1500 });
         navigate("/login");
         return;
       }
@@ -25,7 +25,10 @@ const ProductInfor = ({ product }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+
+      
       if (response.status === 200) {
+        // Token hợp lệ, thực hiện thêm sản phẩm vào giỏ hàng
         dispatch(addCart(product));
         toast.success("Added to cart successfully!", { autoClose: 1000 });
       }

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { message } from "antd";
@@ -12,6 +12,21 @@ const Login = () => {
     password: "",
   });
   const [error, setError] = useState("");
+
+  // Kiểm tra nếu người dùng đã đăng nhập, điều hướng đến trang chủ hoặc trang admin
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (user) {
+        if (user.role === "admin") {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/");
+        }
+      }
+    }
+  }, [navigate]);
 
   const handleInputChange = (e) => {
     setFormData({

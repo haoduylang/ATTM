@@ -11,27 +11,7 @@ const ProductList = () => {
   const handleViewDetails = (id) => {
     navigate(`/product/${id}`);
   };
-  const handleAddToCart = (productId) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        navigate('/login');
-        return;
-    }
-    // Add product to cart logic here
-    console.log(`Product ${productId} added to cart`);
-};
-
-const handleAddToFavorites = (productId) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-      navigate('/login');
-      return;
-  }
-  // Add product to favorites logic here
-  console.log(`Product ${productId} added to favorites`);
-};
-
-
+  
 
   // Định nghĩa danh sách sản phẩm
   const products = [

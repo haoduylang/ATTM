@@ -103,6 +103,30 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+// Middleware kiểm tra người dùng đã đăng nhập hay chưa
+const checkUserAuth = async (req, res, next) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: 'Unauthorized: No token provided' });
+      }
+  
+      const token = authHeader.split(" ")[1];
+      const decoded = jwt.verify(token, JWT_SECRET_KEY);
+      const user = await Users.findById(decoded.userId);
+  
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized: User not found' });
+      }
+  
+      req.user = user;  // Lưu thông tin người dùng vào request
+      next();
+    } catch (error) {
+      console.error("Error in checkUserAuth:", error.message);
+      res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+    }
+  };
+
 
 // ----------------- ADMIN ROUTES -----------------
 
@@ -189,29 +213,30 @@ app.get('/admin/orders', checkAdminAuth, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+// Thêm sản phẩm vào giỏ hàng (API route)
 // Verify token endpoint
-app.get('/api/verify-token', async (req, res) => {
+// API để xác minh token của người dùng trước khi cho phép thêm sản phẩm vào giỏ hàng
+app.get('/api/verify-token', checkUserAuth, (req, res) => {
+    res.status(200).json({ message: "Token is valid" });
+  });
+  app.post('/api/cart', checkUserAuth, async (req, res) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return res.status(401).json({ error: "Unauthorized: No token provided" });
-        }
+      const { productId, quantity } = req.body;
+      
+      if (!productId || !quantity) {
+        return res.status(400).json({ error: "Missing product ID or quantity" });
+      }
+  
+      const user = req.user; // Đảm bảo người dùng đã xác thực
+      
 
-        const token = authHeader.split(" ")[1];
-        const decoded = jwt.verify(token, JWT_SECRET_KEY);
-        const user = await Users.findById(decoded.userId);
-
-        if (!user) {
-            return res.status(401).json({ error: "Unauthorized: User not found" });
-        }
-
-        res.status(200).json({ message: "Token is valid" });
+      
+      res.status(200).json({ message: "Product added to cart successfully" });
     } catch (error) {
-        console.error("Error in /api/verify-token:", error.message);
-        res.status(401).json({ error: "Unauthorized: Invalid or expired token" });
+      console.error("Error in /api/cart:", error.message);
+      res.status(500).json({ error: "Internal server error" });
     }
-});
-
+  });
 
 // ---------------------- SERVER ----------------------
 app.listen(port, () => {

@@ -119,7 +119,7 @@ const AdminDashboard = () => {
                         <th>Email</th>
                         <th>Số điện thoại</th>
                         <th>Địa chỉ</th>
-                        <th>Thao tác</th>
+                    
                     </tr>
                 </thead>
                 <tbody>
@@ -129,13 +129,7 @@ const AdminDashboard = () => {
                             <td>{user.email}</td>
                             <td>{user.phone}</td>
                             <td>{user.address}</td>
-                            <td>
-                                <button 
-                                    className="btn btn-primary btn-sm" 
-                                    onClick={() => handleGenerateKeys(user._id)}>
-                                    Phát sinh Key
-                                </button>
-                            </td>
+                           
                         </tr>
                     ))}
                 </tbody>
