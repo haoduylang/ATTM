@@ -1,248 +1,218 @@
-import React from "react";
-import { useSelector } from "react-redux";
-
-// Hàm format tiền tệ theo định dạng "vi-VN"
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(value);
-};
+import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { FaCreditCard } from 'react-icons/fa';
+import axios from 'axios';
+import formatCurrency from '../../utils/formatCurrency';
 
 const Checkout = () => {
-  let subtotal = 0;
-  let shipping = 30000;
-  let totalItems = 0;
   const state = useSelector((state) => state.cart);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [shipping, setShipping] = useState(30000);
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    address: '',
+    productName: '',
+    quantity: 1
+  });
+  const [signature, setSignature] = useState('');
+  const [privateKey, setPrivateKey] = useState('');
+  const navigate = useNavigate();
 
-  // Tính tổng giá trị các sản phẩm trong giỏ hàng
-  subtotal = state.reduce((total, item) => total + item.price * item.qty, 0);
+  useEffect(() => {
+    const subtotal = state.reduce((total, item) => total + item.price * item.qty, 0);
+    setTotalPrice(subtotal + shipping);
+  }, [state, shipping]);
 
-  // Tính tổng số lượng sản phẩm trong giỏ hàng
-  totalItems = state.reduce((total, item) => total + item.qty, 0);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handlePayment = async () => {
+    try {
+      const userId = localStorage.getItem('userId'); // Lấy userId từ localStorage hoặc từ token
+      const response = await axios.post('http://localhost:3000/api/checkout', {
+        userId,
+        data: `${formData.name}${formData.email}${formData.address}`,
+        productName: formData.productName,
+        quantity: formData.quantity
+      });
+
+      setSignature(response.data.signature);
+      setPrivateKey(response.data.privateKey);
+
+      // Nếu bạn muốn chuyển hướng sau khi hiển thị chữ ký và khóa bí mật, bạn có thể thêm logic ở đây
+      // Ví dụ: Chuyển hướng sau 5 giây
+      setTimeout(() => {
+        navigate('/order-confirmation');
+      }, 5000);
+    } catch (error) {
+      console.error('Error during payment:', error);
+      setPaymentStatus(false);
+    }
+  };
 
   return (
-    <>
-      <div className="container py-5">
-        <div className="row my-4">
-          <div className="col-md-5 col-lg-4 order-md-last">
-            <div className="card mb-4">
-              <div className="card-header py-3 bg-light">
-                <h5 className="mb-0">Order Summary</h5>
-              </div>
-              <div className="card-body">
-                <ul className="list-group list-group-flush">
-                  <li className="list-group-item d-flex justify-content-between align-items-center border-0 px-0 pb-0">
-                    Products ({totalItems})<span>{formatCurrency(subtotal)}</span>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between align-items-center px-0">
-                    Shipping
-                    <span>{formatCurrency(shipping)}</span>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between align-items-center border-0 px-0 mb-3">
-                    <div>
-                      <strong>Total amount</strong>
-                    </div>
-                    <span>
-                      <strong>{formatCurrency(subtotal + shipping)}</strong>
-                    </span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-7 col-lg-8">
-            <div className="card mb-4">
-              <div className="card-header py-3">
-                <h4 className="mb-0">Billing address</h4>
-              </div>
-              <div className="card-body">
-                <form className="needs-validation" novalidate>
-                  <div className="row g-3">
-                    <div className="col-sm-6 my-1">
-                      <label for="firstName" className="form-label">
-                        First name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="firstName"
-                        placeholder=""
-                        required
-                      />
-                      <div className="invalid-feedback">Valid first name is required.</div>
-                    </div>
+    <div className="container my-3 py-3">
+      <h1 className="text-center">Thanh toán</h1>
+      <hr />
 
-                    <div className="col-sm-6 my-1">
-                      <label for="lastName" className="form-label">
-                        Last name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="lastName"
-                        placeholder=""
-                        required
-                      />
-                      <div className="invalid-feedback">Valid last name is required.</div>
-                    </div>
-
-                    <div className="col-12 my-1">
-                      <label for="email" className="form-label">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        id="email"
-                        placeholder="you@example.com"
-                        required
-                      />
-                      <div className="invalid-feedback">
-                        Please enter a valid email address for shipping updates.
+      {state.length === 0 ? (
+        <div className="alert alert-warning">Giỏ hàng của bạn trống</div>
+      ) : (
+        <>
+          <div className="row">
+            <div className="col-md-8">
+              <div className="card mb-4">
+                <div className="card-header">
+                  <h5>Thông tin giỏ hàng</h5>
+                </div>
+                <div className="card-body">
+                  {state.map((item) => (
+                    <div key={item.id} className="row">
+                      <div className="col-lg-3">
+                        <img src={item.image_url} alt={item.name} className="img-fluid" />
+                      </div>
+                      <div className="col-lg-5">
+                        <strong>{item.name}</strong>
+                      </div>
+                      <div className="col-lg-4">
+                        <p>{item.qty} x {formatCurrency(item.price)}</p>
                       </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-                    <div className="col-12 my-1">
-                      <label for="address" className="form-label">
-                        Address
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="address"
-                        placeholder="1234 Main St"
-                        required
-                      />
-                      <div className="invalid-feedback">Please enter your shipping address.</div>
-                    </div>
+            <div className="col-md-4">
+              <div className="card">
+                <div className="card-header bg-light">
+                  <h5>Tổng kết đơn hàng</h5>
+                </div>
+                <div className="card-body">
+                  <ul className="list-group list-group-flush">
+                    <li className="list-group-item d-flex justify-content-between">
+                      <span>Sản phẩm</span>
+                      <span>{formatCurrency(totalPrice - shipping)}</span>
+                    </li>
+                    <li className="list-group-item d-flex justify-content-between">
+                      <span>Phí vận chuyển</span>
+                      <span>{formatCurrency(shipping)}</span>
+                    </li>
+                    <li className="list-group-item d-flex justify-content-between">
+                      <strong>Tổng tiền</strong>
+                      <strong>{formatCurrency(totalPrice)}</strong>
+                    </li>
+                  </ul>
 
-                    <div className="col-12">
-                      <label for="address2" className="form-label">
-                        Address 2 <span className="text-muted">(Optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="address2"
-                        placeholder="Apartment or suite"
-                      />
-                    </div>
-
-                    <div className="col-md-5 my-1">
-                      <label for="country" className="form-label">
-                        Country
-                      </label>
-                      <br />
-                      <select className="form-select" id="country" required>
-                        <option value="">Choose...</option>
-                        <option>India</option>
-                      </select>
-                      <div className="invalid-feedback">Please select a valid country.</div>
-                    </div>
-
-                    <div className="col-md-4 my-1">
-                      <label for="state" className="form-label">
-                        State
-                      </label>
-                      <br />
-                      <select className="form-select" id="state" required>
-                        <option value="">Choose...</option>
-                        <option>Punjab</option>
-                      </select>
-                      <div className="invalid-feedback">Please provide a valid state.</div>
-                    </div>
-
-                    <div className="col-md-3 my-1">
-                      <label for="zip" className="form-label">
-                        Zip
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="zip"
-                        placeholder=""
-                        required
-                      />
-                      <div className="invalid-feedback">Zip code required.</div>
-                    </div>
-                  </div>
-
-                  <hr className="my-4" />
-
-                  <h4 className="mb-3">Payment</h4>
-
-                  <div className="row gy-3">
-                    <div className="col-md-6">
-                      <label for="cc-name" className="form-label">
-                        Name on card
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="cc-name"
-                        placeholder=""
-                        required
-                      />
-                      <small className="text-muted">Full name as displayed on card</small>
-                      <div className="invalid-feedback">Name on card is required</div>
-                    </div>
-
-                    <div className="col-md-6">
-                      <label for="cc-number" className="form-label">
-                        Credit card number
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="cc-number"
-                        placeholder=""
-                        required
-                      />
-                      <div className="invalid-feedback">Credit card number is required</div>
-                    </div>
-
-                    <div className="col-md-3">
-                      <label for="cc-expiration" className="form-label">
-                        Expiration
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="cc-expiration"
-                        placeholder=""
-                        required
-                      />
-                      <div className="invalid-feedback">Expiration date required</div>
-                    </div>
-
-                    <div className="col-md-3">
-                      <label for="cc-cvv" className="form-label">
-                        CVV
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="cc-cvv"
-                        placeholder=""
-                        required
-                      />
-                      <div className="invalid-feedback">Security code required</div>
-                    </div>
-                  </div>
-
-                  <hr className="my-4" />
-
-                  <button className="w-100 btn btn-primary " type="submit" disabled>
-                    Continue to checkout
+                  <button
+                    className="btn btn-dark btn-lg btn-block"
+                    onClick={handlePayment}
+                    disabled={paymentStatus === null || paymentStatus === true}
+                  >
+                    <FaCreditCard /> Thanh toán
                   </button>
-                </form>
+
+                  {paymentStatus === false && (
+                    <div className="alert alert-danger mt-3">
+                      Thanh toán thất bại. Vui lòng thử lại.
+                    </div>
+                  )}
+                  {paymentStatus === true && (
+                    <div className="alert alert-success mt-3">
+                      Thanh toán thành công! Đang chuyển hướng...
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </>
+
+          <div className="mt-4">
+            <h3>Thông tin người nhận</h3>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="name" className="form-label">Name</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label htmlFor="email" className="form-label">Email</label>
+                <input
+                  type="email"
+                  className="form-control"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label htmlFor="address" className="form-label">Address</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label htmlFor="productName" className="form-label">Product Name</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="productName"
+                  name="productName"
+                  value={formData.productName}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label htmlFor="quantity" className="form-label">Quantity</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  id="quantity"
+                  name="quantity"
+                  value={formData.quantity}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </form>
+          </div>
+
+          {signature && (
+            <div className="mt-3">
+              <h5>Signature:</h5>
+              <p>{signature}</p>
+            </div>
+          )}
+          {privateKey && (
+            <div className="mt-3">
+              <h5>Private Key:</h5>
+              <p>{privateKey}</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 };
 

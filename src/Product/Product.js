@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import queryString from "query-string";
-
 import Pagination from "./Pagination";
 import ProductFilters from "./ProductFilters";
 import "./Product.scss";
