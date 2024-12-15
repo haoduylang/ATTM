@@ -52,8 +52,7 @@ const Cart = () => {
                               <div className="col-lg-3 col-md-3 col-sm-4">
                                 <div className="bg-image rounded" data-mdb-ripple-color="light">
                                   <img
-                                    src={item.image_url}
-                                    alt={item.description}
+                                    src={item.image_url}                             
                                     className="img-fluid"
                                   />
                                 </div>

@@ -13,6 +13,8 @@ import Cart from "./components/Cart/Cart";
 import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";    
 import AdminDashboard from "./admin/adminDashboard";
+import Checkout from "./components/Checkout/Checkout";
+import Information from './components/Information/Information'; // Import Information component
 
 function App() {
   return (
@@ -28,8 +30,10 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/checkout" element={<Checkout />} />
             <Route path="/cart" element={<Cart />} /> {/* Trang giỏ hàng */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} /> {/* Sửa thành element */}
+            <Route path="/information" element={<Information />} /> 
           </Routes>
         </div>
       </div>

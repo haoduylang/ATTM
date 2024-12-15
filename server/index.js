@@ -1,23 +1,20 @@
-// Import các module cần thiết
 const express = require('express');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const { generateKeyPair, sign, verify } = require('./DigitalSignatureUtil'); // Import các hàm từ DigitalSignatureUtil
 
 // Kết nối cơ sở dữ liệu
 require('./connection');
 
 // Import Models
 const Users = require('./models/Users');
-const Orders = require('./models/Orders'); // Nếu có model Orders
+const Orders = require('./models/Orders'); // Nếu bạn có model Orders
 
 // Khởi tạo app
 const app = express();
 const port = process.env.PORT || 3000;
-
-// JWT Secret Key
-const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || 'THIS_IS_A_JWT_SECRET_KEY';
 
 // Middleware
 app.use(cors());
@@ -25,6 +22,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// JWT Secret Key
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || 'THIS_IS_A_JWT_SECRET_KEY';
 
 // ---------------------- ROUTES ----------------------
 
@@ -103,30 +103,28 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Middleware kiểm tra người dùng đã đăng nhập hay chưa
 const checkUserAuth = async (req, res, next) => {
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: 'Unauthorized: No token provided' });
-      }
-  
-      const token = authHeader.split(" ")[1];
-      const decoded = jwt.verify(token, JWT_SECRET_KEY);
-      const user = await Users.findById(decoded.userId);
-  
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized: User not found' });
-      }
-  
-      req.user = user;  // Lưu thông tin người dùng vào request
-      next();
-    } catch (error) {
-      console.error("Error in checkUserAuth:", error.message);
-      res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: 'Unauthorized: No token provided' });
     }
-  };
 
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET_KEY);
+    const user = await Users.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized: User not found' });
+    }
+
+    req.user = user;  // Lưu thông tin người dùng vào request
+    next();
+  } catch (error) {
+    console.error("Error in checkUserAuth:", error.message);
+    res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+  }
+};
 
 // ----------------- ADMIN ROUTES -----------------
 
@@ -195,7 +193,7 @@ app.post('/admin/create', checkAdminAuth, async (req, res) => {
 // Lấy danh sách người dùng
 app.get('/admin/users', checkAdminAuth, async (req, res) => {
     try {
-        const users = await Users.find({}, 'fullname email phone address');
+        const users = await Users.find({}, 'fullname email phone address publicKey');
         res.status(200).json(users);
     } catch (error) {
         console.error("Error in /admin/users:", error.message);
@@ -213,31 +211,106 @@ app.get('/admin/orders', checkAdminAuth, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Thêm sản phẩm vào giỏ hàng (API route)
-// Verify token endpoint
-// API để xác minh token của người dùng trước khi cho phép thêm sản phẩm vào giỏ hàng
+
+// API để xử lý chữ ký điện tử và lưu trữ khóa công khai vào cơ sở dữ liệu
+app.post('/api/information', async (req, res) => {
+  try {
+    const { userId, data, productName, quantity } = req.body;
+
+    // Tạo cặp khóa với kích thước đủ lớn (2048 bit)
+    const { publicKey, privateKey } = await generateKeyPair();
+
+    // Ký dữ liệu
+    const signature = sign(data, privateKey);
+
+    // Lưu khóa công khai vào cơ sở dữ liệu
+    await Users.findByIdAndUpdate(userId, { publicKey: publicKey.toString('base64') });
+
+    // Tạo đơn hàng mới và lưu vào cơ sở dữ liệu
+    const newOrder = new Orders({
+      user: userId,
+      productName,
+      quantity,
+      publicKey: publicKey.toString('base64')
+    });
+
+    await newOrder.save();
+
+    // Trả về chữ ký và privateKey cho người dùng
+    res.status(200).json({ signature, privateKey: privateKey.toString('base64') });
+  } catch (error) {
+    console.error("Error in /api/information:", error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// verify
 app.get('/api/verify-token', checkUserAuth, (req, res) => {
-    res.status(200).json({ message: "Token is valid" });
+  res.status(200).json({ message: "Token is valid" });
+});
+app.post('/api/cart', checkUserAuth, async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+    
+    if (!productId || !quantity) {
+      return res.status(400).json({ error: "Missing product ID or quantity" });
+    }
+
+    const user = req.user; // Đảm bảo người dùng đã xác thực
+    
+
+    
+    res.status(200).json({ message: "Product added to cart successfully" });
+  } catch (error) {
+    console.error("Error in /api/cart:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// API để xử lý đơn hàng
+app.post('/api/orders', checkUserAuth, async (req, res) => {
+    try {
+      const { items, total, shipping } = req.body;
+  
+      // Tạo đơn hàng mới và lưu vào cơ sở dữ liệu
+      const newOrder = new Orders({
+        user: req.user._id,
+        items,
+        total,
+        shipping,
+        orderDate: new Date()
+      });
+  
+      await newOrder.save();
+  
+      res.status(200).json({ success: true, order: newOrder });
+    } catch (error) {
+      console.error("Error in /api/orders:", error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
-  app.post('/api/cart', checkUserAuth, async (req, res) => {
+
+  // Route để thêm sản phẩm vào giỏ hàng
+app.post('/api/cart', checkUserAuth, async (req, res) => {
     try {
       const { productId, quantity } = req.body;
-      
+  
       if (!productId || !quantity) {
         return res.status(400).json({ error: "Missing product ID or quantity" });
       }
   
       const user = req.user; // Đảm bảo người dùng đã xác thực
-      
-
-      
-      res.status(200).json({ message: "Product added to cart successfully" });
+      // Thêm logic để thêm sản phẩm vào giỏ hàng của người dùng
+      res.status(200).json({ message: "Product added to cart" });
     } catch (error) {
       console.error("Error in /api/cart:", error.message);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
-
+// API để lấy thông tin người dùng
+app.get('/api/user', checkUserAuth, (req, res) => {
+    res.status(200).json({ user: req.user });
+  });
 // ---------------------- SERVER ----------------------
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

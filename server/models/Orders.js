@@ -1,10 +1,13 @@
 const mongoose = require('mongoose');
 
-const OrderSchema = new mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true },
-    productName: { type: String, required: true },
-    quantity: { type: Number, required: true },
+const orderSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'Users' },
+    productName: String,
+    quantity: Number,
     orderDate: { type: Date, default: Date.now },
+    publicKey: String // Thêm trường publicKey
 });
 
-module.exports = mongoose.model('Orders', OrderSchema);
+const Orders = mongoose.model('Orders', orderSchema);
+
+module.exports = Orders;
