@@ -1,10 +1,12 @@
 import React, { useContext } from "react";
 import { NavLink, useNavigate } from "react-router-dom"; // Đảm bảo sử dụng useNavigate
-import { FaSignInAlt, FaUserPlus, FaShoppingCart, FaSignOutAlt } from "react-icons/fa";
+import { FaSignInAlt, FaUserPlus, FaShoppingCart, FaSignOutAlt, FaExclamationTriangle } from "react-icons/fa";
 import Button from "react-bootstrap/Button";
 import Collapse from "react-bootstrap/Collapse";
 import { useSelector } from "react-redux";
 import { UserContext } from "../../UserContext"; // Import UserContext
+import axios from "axios";
+import { message } from 'antd';
 
 const Navbar = () => {
   const state = useSelector((state) => state.cart);
@@ -18,9 +20,28 @@ const Navbar = () => {
 
   const handleLogout = () => {
     setUser(null); // Xóa thông tin người dùng
-    localStorage.removeItem("user"); // Xóa dữ liệu trong localStorage\
+    localStorage.removeItem("user"); // Xóa dữ liệu trong localStorage
     localStorage.removeItem("token");
     navigate("/login"); // Chuyển hướng về trang đăng nhập sau khi đăng xuất
+  };
+
+  const handleReportKeyLeak = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post("http://localhost:3000/api/report-key-leak", {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (response.status === 200) {
+        message.success('Public key updated successfully. Please save your new private key.');
+        alert(`New Private Key: ${response.data.privateKey}`);
+      } else {
+        message.error('Failed to update public key.');
+      }
+    } catch (error) {
+      console.error('Error reporting key leak:', error.message);
+      message.error('Failed to report key leak. Please try again.');
+    }
   };
 
   return (
@@ -71,20 +92,29 @@ const Navbar = () => {
                     className="btn btn-outline-dark m-2"
                     onClick={handleLogout}
                   >
-                      <div style={{ display: "flex", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center" }}>
                       <FaSignOutAlt style={{ marginRight: "5px" }} />
                       Logout
-                   </div>
+                    </div>
+                  </button>
+                  <button
+                    className="btn btn-outline-warning m-2"
+                    onClick={handleReportKeyLeak}
+                  >
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <FaExclamationTriangle style={{ marginRight: "5px" }} />
+                      Report Key Leak
+                    </div>
                   </button>
                   <NavLink
                     to="/cart"
                     className="btn btn-outline-dark m-2"
                     onClick={handleNavLinkClick}
                   >
-                      <div style={{ display: "flex", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center" }}>
                       <FaShoppingCart style={{ marginRight: "5px" }} />
-                    Cart ({state.length})
-                   </div>
+                      Cart ({state.length})
+                    </div>
                   </NavLink>
                 </>
               ) : (
@@ -105,8 +135,8 @@ const Navbar = () => {
                     onClick={handleNavLinkClick}
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
-                    <FaUserPlus style={{ marginRight: "5px" }} />
-                    Register
+                      <FaUserPlus style={{ marginRight: "5px" }} />
+                      Register
                     </div>
                   </NavLink>
                 </>

@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import{message} from 'antd';
+import { message } from 'antd';
+
 const Register = () => {
   const navigate = useNavigate();
   // State lưu trữ dữ liệu form và trạng thái
@@ -33,6 +34,7 @@ const Register = () => {
 
       // Xử lý phản hồi thành công
       message.success('Đăng ký thành công, bạn có thể đăng nhập ngay');
+      alert(`Private Key: ${response.data.privateKey}`);
       navigate("/login"); // Chuyển hướng về trang đăng nhập
       setError("");
     } catch (err) {

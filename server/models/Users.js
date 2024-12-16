@@ -31,7 +31,16 @@ const userSchema = new mongoose.Schema({
     },
     publicKey: {
         type: String
-    }
+    },
+    privateKey: {
+        type: String
+    },
+    cart: [
+        {
+            productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+            quantity: { type: Number, default: 1 }
+        }
+    ]
 });
 
 const Users = mongoose.model('Users', userSchema);

@@ -70,9 +70,10 @@ const AdminDashboard = () => {
             });
 
             if (response.status === 200) {
-                // Cập nhật lại danh sách đơn hàng sau khi xác nhận
-                const updatedOrders = await getOrders(token);
-                setOrders(updatedOrders);
+                // Cập nhật lại trạng thái đơn hàng trong giao diện
+                setOrders(orders.map(order => 
+                    order._id === orderId ? { ...order, status: 'confirmed' } : order
+                ));
             } else {
                 console.error('Error confirming order:', response.data.error);
             }
@@ -130,6 +131,7 @@ const AdminDashboard = () => {
                         <th>Số lượng</th>
                         <th>Ngày đặt</th>
                         <th>Public Key</th>
+                        <th>Trạng thái</th>
                         <th>Hành động</th>
                     </tr>
                 </thead>
@@ -141,6 +143,7 @@ const AdminDashboard = () => {
                             <td>{order.quantity}</td>
                             <td>{new Date(order.orderDate).toLocaleDateString()}</td>
                             <td>{order.publicKey}</td>
+                            <td>{order.status === 'confirmed' ? 'Đã xác nhận' : 'Chưa xác nhận'}</td>
                             <td>
                                 <button
                                     className="btn btn-success btn-sm"

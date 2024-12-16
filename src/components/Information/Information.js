@@ -14,6 +14,7 @@ const Information = () => {
   const [signature, setSignature] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [error, setError] = useState(null); // Để lưu thông báo lỗi
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,6 +60,8 @@ const Information = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // Ngăn chặn gửi nhiều lần
+    setIsSubmitting(true); // Đặt trạng thái đang gửi
     try {
       const token = localStorage.getItem('token');
       const { name, email, phone, address, productName, quantity } = formData;

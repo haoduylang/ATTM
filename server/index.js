@@ -35,36 +35,34 @@ app.get('/', (req, res) => {
 
 // ----------------- USER AUTHENTICATION -----------------
 
-// Đăng ký
+// API để đăng ký tài khoản
 app.post('/api/register', async (req, res) => {
-    try {
-        const { fullname, email, password, phone, address } = req.body;
+  try {
+    const { fullname, email, password, phone, address } = req.body;
 
-        if (!fullname || !email || !password || !phone || !address) {
-            return res.status(400).json({ error: "Please fill all the fields" });
-        }
+    // Mã hóa mật khẩu
+    const hashedPassword = await bcryptjs.hash(password, 10);
 
-        const existingUser = await Users.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ error: "User already exists" });
-        }
+    // Tạo khóa công khai với kích thước đủ lớn (2048 bit)
+    const { publicKey } = await generateKeyPair();
 
-        const hashedPassword = await bcryptjs.hash(password, 10);
+    // Tạo người dùng mới và lưu vào cơ sở dữ liệu
+    const newUser = new Users({
+      fullname,
+      email,
+      password: hashedPassword,
+      phone,
+      address,
+      publicKey: publicKey.toString('base64')
+    });
 
-        const newUser = new Users({
-            fullname,
-            email,
-            password: hashedPassword,
-            phone,
-            address,
-        });
+    await newUser.save();
 
-        await newUser.save();
-        res.status(201).json({ message: "User registered successfully" });
-    } catch (error) {
-        console.error("Error in /api/register:", error.message);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error("Error in /api/register:", error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Đăng nhập
@@ -223,9 +221,6 @@ app.post('/api/information', checkUserAuth, async (req, res) => {
     // Ký dữ liệu
     const signature = sign(data, privateKey);
 
-    // Lưu khóa công khai vào cơ sở dữ liệu
-    await Users.findByIdAndUpdate(req.user._id, { publicKey: publicKey.toString('base64') });
-
     // Tạo đơn hàng mới và lưu vào cơ sở dữ liệu
     const newOrder = new Orders({
       user: req.user._id,
@@ -244,28 +239,11 @@ app.post('/api/information', checkUserAuth, async (req, res) => {
   }
 });
 
-// verify
+// verify token
 app.get('/api/verify-token', checkUserAuth, (req, res) => {
   res.status(200).json({ message: "Token is valid" });
 });
-app.post('/api/cart', checkUserAuth, async (req, res) => {
-  try {
-    const { productId, quantity } = req.body;
-    
-    if (!productId || !quantity) {
-      return res.status(400).json({ error: "Missing product ID or quantity" });
-    }
 
-    const user = req.user; // Đảm bảo người dùng đã xác thực
-    
-
-    
-    res.status(200).json({ message: "Product added to cart successfully" });
-  } catch (error) {
-    console.error("Error in /api/cart:", error.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 // API để xử lý đơn hàng
 app.post('/api/orders', checkUserAuth, async (req, res) => {
@@ -291,23 +269,46 @@ app.post('/api/orders', checkUserAuth, async (req, res) => {
   });
   
 
-  // Route để thêm sản phẩm vào giỏ hàng
+// Route để thêm sản phẩm vào giỏ hàng
 app.post('/api/cart', checkUserAuth, async (req, res) => {
-    try {
+  try {
       const { productId, quantity } = req.body;
-  
+
       if (!productId || !quantity) {
-        return res.status(400).json({ error: "Missing product ID or quantity" });
+          return res.status(400).json({ error: "Missing product ID or quantity" });
       }
-  
+
       const user = req.user; // Đảm bảo người dùng đã xác thực
-      // Thêm logic để thêm sản phẩm vào giỏ hàng của người dùng
-      res.status(200).json({ message: "Product added to cart" });
-    } catch (error) {
+
+      // Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
+      const cartItem = user.cart.find(item => item.productId.toString() === productId);
+      if (cartItem) {
+          // Nếu sản phẩm đã có trong giỏ hàng, cập nhật số lượng
+          cartItem.quantity += quantity;
+      } else {
+          // Nếu sản phẩm chưa có trong giỏ hàng, thêm sản phẩm mới
+          user.cart.push({ productId, quantity });
+      }
+
+      await user.save();
+      res.status(200).json({ message: "Product added to cart successfully" });
+  } catch (error) {
       console.error("Error in /api/cart:", error.message);
       res.status(500).json({ error: 'Internal server error' });
-    }
-  });
+  }
+});
+// Route để lấy giỏ hàng của người dùng
+app.get('/api/cart', checkUserAuth, async (req, res) => {
+  try {
+      const user = req.user; // Đảm bảo người dùng đã xác thực
+      await user.populate('cart.productId').execPopulate(); // Populate thông tin sản phẩm
+
+      res.status(200).json(user.cart);
+  } catch (error) {
+      console.error("Error in /api/cart:", error.message);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
 // API để lấy thông tin người dùng
 app.get('/api/user', checkUserAuth, (req, res) => {
     res.status(200).json({ user: req.user });
@@ -334,6 +335,17 @@ app.post('/admin/orders/confirm', checkUserAuth, async (req, res) => {
   }
 });
 
+// Kiểm tra thay đổi trên database khi load
+app.get('/admin/orders/check', checkAdminAuth, async (req, res) => {
+  try {
+    const orders = await Orders.find().populate('user', 'fullname email');
+    const modifiedOrders = orders.filter(order => order.modified);
+    res.status(200).json(modifiedOrders);
+  } catch (error) {
+    console.error("Error in /admin/orders/check:", error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
   // Xóa đơn hàng
 app.delete('/admin/orders/:orderId', checkUserAuth, async (req, res) => {
@@ -346,6 +358,26 @@ app.delete('/admin/orders/:orderId', checkUserAuth, async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
+
+// Xử lý vấn đề lộ private key
+app.post('/api/report-key-leak', checkUserAuth, async (req, res) => {
+  try {
+    const user = req.user;
+    user.publicKey = null; // Đưa public key về trạng thái không chấp nhận xác thực mới
+    await user.save();
+
+    // Phát sinh cặp khóa mới
+    const { publicKey, privateKey } = await generateKeyPair();
+    user.publicKey = publicKey.toString('base64');
+    await user.save();
+
+    res.status(200).json({ message: 'Public key updated successfully', privateKey: privateKey.toString('base64') });
+  } catch (error) {
+    console.error("Error in /api/report-key-leak:", error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ---------------------- SERVER ----------------------
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
