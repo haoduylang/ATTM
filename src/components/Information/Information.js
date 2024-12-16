@@ -60,13 +60,14 @@ const Information = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('token');
       const { name, email, phone, address, productName, quantity } = formData;
       const { data } = await axios.post('http://localhost:3000/api/information', {
-        userId,
         data: `${name}${email}${phone}${address}`,
         productName,
         quantity
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setSignature(data.signature);
       setPrivateKey(data.privateKey);

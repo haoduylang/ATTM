@@ -62,6 +62,39 @@ const AdminDashboard = () => {
         navigate('/login');
     };
 
+    const handleConfirmOrder = async (orderId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${API_BASE_URL}/admin/orders/confirm`, { orderId }, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.status === 200) {
+                // Cập nhật lại danh sách đơn hàng sau khi xác nhận
+                const updatedOrders = await getOrders(token);
+                setOrders(updatedOrders);
+            } else {
+                console.error('Error confirming order:', response.data.error);
+            }
+        } catch (error) {
+            console.error('Error confirming order:', error.message);
+        }
+    };
+
+    const handleDeleteOrder = async (orderId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_BASE_URL}/admin/orders/${orderId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            // Cập nhật lại danh sách đơn hàng sau khi xóa
+            const updatedOrders = await getOrders(token);
+            setOrders(updatedOrders);
+        } catch (error) {
+            console.error('Error deleting order:', error.message);
+        }
+    };
+
     return (
         <div className="container mt-4">
             <h2 className="mb-4">Admin Dashboard</h2>
@@ -97,6 +130,7 @@ const AdminDashboard = () => {
                         <th>Số lượng</th>
                         <th>Ngày đặt</th>
                         <th>Public Key</th>
+                        <th>Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -107,6 +141,20 @@ const AdminDashboard = () => {
                             <td>{order.quantity}</td>
                             <td>{new Date(order.orderDate).toLocaleDateString()}</td>
                             <td>{order.publicKey}</td>
+                            <td>
+                                <button
+                                    className="btn btn-success btn-sm"
+                                    onClick={() => handleConfirmOrder(order._id)}
+                                >
+                                    Xác nhận
+                                </button>
+                                <button
+                                    className="btn btn-danger btn-sm ml-2"
+                                    onClick={() => handleDeleteOrder(order._id)}
+                                >
+                                    Hủy
+                                </button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>

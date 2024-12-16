@@ -213,9 +213,9 @@ app.get('/admin/orders', checkAdminAuth, async (req, res) => {
 });
 
 // API để xử lý chữ ký điện tử và lưu trữ khóa công khai vào cơ sở dữ liệu
-app.post('/api/information', async (req, res) => {
+app.post('/api/information', checkUserAuth, async (req, res) => {
   try {
-    const { userId, data, productName, quantity } = req.body;
+    const { data, productName, quantity } = req.body;
 
     // Tạo cặp khóa với kích thước đủ lớn (2048 bit)
     const { publicKey, privateKey } = await generateKeyPair();
@@ -224,11 +224,11 @@ app.post('/api/information', async (req, res) => {
     const signature = sign(data, privateKey);
 
     // Lưu khóa công khai vào cơ sở dữ liệu
-    await Users.findByIdAndUpdate(userId, { publicKey: publicKey.toString('base64') });
+    await Users.findByIdAndUpdate(req.user._id, { publicKey: publicKey.toString('base64') });
 
     // Tạo đơn hàng mới và lưu vào cơ sở dữ liệu
     const newOrder = new Orders({
-      user: userId,
+      user: req.user._id,
       productName,
       quantity,
       publicKey: publicKey.toString('base64')
@@ -289,6 +289,7 @@ app.post('/api/orders', checkUserAuth, async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
+  
 
   // Route để thêm sản phẩm vào giỏ hàng
 app.post('/api/cart', checkUserAuth, async (req, res) => {
@@ -310,6 +311,40 @@ app.post('/api/cart', checkUserAuth, async (req, res) => {
 // API để lấy thông tin người dùng
 app.get('/api/user', checkUserAuth, (req, res) => {
     res.status(200).json({ user: req.user });
+  });
+
+
+// Xác nhận đơn hàng
+app.post('/admin/orders/confirm', checkUserAuth, async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    const order = await Orders.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Cập nhật trạng thái đơn hàng (ví dụ: đã xác nhận)
+    order.status = 'confirmed';
+    await order.save();
+
+    res.status(200).json({ success: true, message: 'Order confirmed successfully' });
+  } catch (error) {
+    console.error("Error in /admin/orders/confirm:", error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+  // Xóa đơn hàng
+app.delete('/admin/orders/:orderId', checkUserAuth, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      await Orders.findByIdAndDelete(orderId);
+      res.status(200).json({ success: true, message: 'Order deleted successfully' });
+    } catch (error) {
+      console.error("Error in /admin/orders/:orderId:", error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 // ---------------------- SERVER ----------------------
 app.listen(port, () => {
