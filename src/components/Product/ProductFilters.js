@@ -1,5 +1,5 @@
 import React from "react";
-import FilterByCategory from "./Filters/FilterByCategory";
+
 import FilterByPrice from "./Filters/FilterByPrice";
 
 const ProductFilters = (props) => {

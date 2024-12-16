@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import queryString from "query-string";
-import { getAllProducts } from "../../services/apiService";
+
 import Pagination from "./Pagination";
 import ProductFilters from "./ProductFilters";
 import "./Product.scss";
@@ -19,20 +19,9 @@ function Product() {
     _page: 1,
     _sort: "price",
     _order: "asc",
-  });
+  })
 
-  useEffect(() => {
-    const fetchProductList = async () => {
-      const paramsString = queryString.stringify(filters);
-      const res = await getAllProducts(paramsString);
-
-      if (res && res.data.length > 0) {
-        setProducts(res.data);
-        setPagination(res.pagination);
-      }
-    };
-    fetchProductList();
-  }, [filters]);
+  
 
   const handlePageChange = (newPage) => {
     setFilters((prevFilters) => ({ ...prevFilters, _page: newPage }));
