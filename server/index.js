@@ -3,6 +3,8 @@ const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const fs = require('fs');
+const https = require('https');
 const { generateKeyPair, sign, verify } = require('./DigitalSignatureUtil'); // Import các hàm từ DigitalSignatureUtil
 
 // Kết nối cơ sở dữ liệu
@@ -14,7 +16,7 @@ const Orders = require('./models/Orders'); // Nếu bạn có model Orders
 
 // Khởi tạo app
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;;
 
 // Middleware
 app.use(cors());
@@ -23,8 +25,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Middleware cấu hình CORS
+const corsOptions = {
+    origin: 'https://localhost:3000', // Địa chỉ của React app
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true, // Cho phép cookie trong các yêu cầu
+  };
+  
+  app.use(cors(corsOptions));
+  
 // JWT Secret Key
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || 'THIS_IS_A_JWT_SECRET_KEY';
+
 
 // ---------------------- ROUTES ----------------------
 
@@ -223,6 +235,12 @@ app.post('/api/checkout', async (req, res) => {
 });
 
 // ---------------------- SERVER ----------------------
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+// Đọc chứng chỉ SSL và khóa riêng
+const privateKey = fs.readFileSync('localhost-key.pem', 'utf8');
+const certificate = fs.readFileSync('localhost.pem', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
+// Chạy server với HTTPS
+https.createServer(credentials, app).listen(port, () => {
+    console.log(`Server is running on https://localhost:${port}`);
 });

@@ -2,6 +2,8 @@
   "name": "ecommerce-handmade",
   "version": "0.1.0",
   "private": true,
+  "proxy": "https://localhost:5000",
+  "start": "HTTPS=true react-scripts start",
   "dependencies": {
     "@chakra-ui/react": "^2.8.2",
     "@emotion/react": "^11.13.0",

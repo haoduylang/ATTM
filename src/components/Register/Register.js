@@ -29,7 +29,7 @@ const Register = () => {
     e.preventDefault();
     try {
       // Gửi dữ liệu đến server
-      const response = await axios.post("http://localhost:3000/api/register", formData);
+      const response = await axios.post("https://localhost:3000/api/register", formData);
 
       // Xử lý phản hồi thành công
       message.success('Đăng ký thành công, bạn có thể đăng nhập ngay');

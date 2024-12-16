@@ -4,7 +4,7 @@ import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap CSS
 
 // Constants and helper functions
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'https://localhost:5000';
 
 export const getUsers = async (token) => {
     const response = await axios.get(`${API_BASE_URL}/admin/users`, {
