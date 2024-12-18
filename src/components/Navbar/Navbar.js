@@ -34,7 +34,7 @@ const Navbar = () => {
   
       if (response.status === 200) {
         message.success('Public key updated successfully. Please save your new private key.');
-        alert(`New Private Key: ${response.data.privateKey}`);
+        alert(`New Private Key: ${response.data.privateKey}\nNew Public Key: ${response.data.publicKey}`);
       } else {
         message.error('Failed to update public key.');
       }

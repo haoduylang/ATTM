@@ -5,7 +5,10 @@ const orderSchema = new mongoose.Schema({
     productName: String,
     quantity: Number,
     orderDate: { type: Date, default: Date.now },
-    publicKey: String // Thêm trường publicKey
+    publicKey: String,
+    privateKey: String,
+    status: { type: String, default: 'pending' }, // Thêm trường status
+    cancelRequested: { type: Boolean, default: false } // Thêm trường cancelRequested
 });
 
 const Orders = mongoose.model('Orders', orderSchema);

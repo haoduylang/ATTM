@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { promisify } = require('util');
+const { hashData } = require('./hashUtil'); // Import hashUtil
 const generateKeyPair = promisify(crypto.generateKeyPair);
 
 const generateKeyPairAsync = async () => {
@@ -21,18 +22,23 @@ const sign = (data, privateKey) => {
   const sign = crypto.createSign('SHA256');
   sign.update(data);
   sign.end();
-  return sign.sign(privateKey, 'base64');
+  return sign.sign(privateKey, 'base64'); // Sử dụng định dạng base64
 };
 
 const verify = (data, signature, publicKey) => {
   const verify = crypto.createVerify('SHA256');
   verify.update(data);
   verify.end();
-  return verify.verify(publicKey, signature, 'base64');
+  return verify.verify(publicKey, signature, 'base64'); // Sử dụng định dạng base64
+};
+
+const hashPublicKey = (publicKey) => {
+  return hashData(publicKey);
 };
 
 module.exports = {
   generateKeyPair: generateKeyPairAsync,
   sign,
-  verify
+  verify,
+  hashPublicKey
 };

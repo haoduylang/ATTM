@@ -1,10 +1,4 @@
 // Define the currency formatting function
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(value);
-};
-
-// Export the function
-export default formatCurrency;
+export default function formatCurrency(number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(number);
+}

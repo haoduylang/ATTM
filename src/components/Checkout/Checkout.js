@@ -16,35 +16,8 @@ const Checkout = () => {
   }, [state, shipping]);
 
   const handlePayment = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/orders', {
-        method: 'POST',
-        body: JSON.stringify({ items: state, total: totalPrice, shipping }),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setPaymentStatus(true);
-
-        // Điều hướng qua trang Information và truyền dữ liệu
         navigate('/information', { state: { total: totalPrice, shipping, items: state } });
-      } else {
-        setPaymentStatus(false);
-      }
-    } catch (error) {
-      console.error('Error during payment:', error);
-      setPaymentStatus(false);
-    }
+   
   };
 
   return (

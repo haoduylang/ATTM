@@ -117,7 +117,7 @@ const AdminDashboard = () => {
                             <td>{user.email}</td>
                             <td>{user.phone}</td>
                             <td>{user.address}</td>
-                            <td>{user.publicKey}</td>
+                            <td>{user.publicKey}</td> {/* Hiển thị khóa công khai ngắn gọn */}
                         </tr>
                     ))}
                 </tbody>
@@ -132,6 +132,7 @@ const AdminDashboard = () => {
                         <th>Ngày đặt</th>
                         <th>Public Key</th>
                         <th>Trạng thái</th>
+                        <th>Yêu cầu hủy</th> {/* Thêm cột yêu cầu hủy */}
                         <th>Hành động</th>
                     </tr>
                 </thead>
@@ -142,8 +143,9 @@ const AdminDashboard = () => {
                             <td>{order.productName}</td>
                             <td>{order.quantity}</td>
                             <td>{new Date(order.orderDate).toLocaleDateString()}</td>
-                            <td>{order.publicKey}</td>
+                            <td>{order.publicKey}</td> {/* Hiển thị khóa công khai ngắn gọn */}
                             <td>{order.status === 'confirmed' ? 'Đã xác nhận' : 'Chưa xác nhận'}</td>
+                            <td>{order.cancelRequested ? 'Có' : 'Không'}</td> {/* Hiển thị yêu cầu hủy */}
                             <td>
                                 <button
                                     className="btn btn-success btn-sm"

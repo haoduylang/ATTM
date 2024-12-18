@@ -13,6 +13,7 @@ const Information = () => {
   });
   const [signature, setSignature] = useState('');
   const [privateKey, setPrivateKey] = useState('');
+  const [publicKey, setPublicKey] = useState(''); // Thêm state để lưu khóa công khai ngắn gọn
   const [error, setError] = useState(null); // Để lưu thông báo lỗi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -74,7 +75,8 @@ const Information = () => {
       });
       setSignature(data.signature);
       setPrivateKey(data.privateKey);
-      alert(`Signature: ${data.signature}\nPrivate Key: ${data.privateKey}`);
+      setPublicKey(data.publicKey); // Lưu khóa công khai ngắn gọn vào state
+      alert(`Signature: ${data.signature}\nPrivate Key: ${data.privateKey}\nPublic Key: ${data.publicKey}`);
       navigate('/confirmation');
     } catch (error) {
       console.error('Error during checkout:', error.message);
@@ -137,6 +139,12 @@ const Information = () => {
         <div className="mt-3">
           <h5>Private Key:</h5>
           <p>{privateKey}</p>
+        </div>
+      )}
+      {publicKey && (
+        <div className="mt-3">
+          <h5>Public Key:</h5>
+          <p>{publicKey}</p>
         </div>
       )}
     </div>
