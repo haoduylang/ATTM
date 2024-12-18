@@ -1,28 +1,37 @@
 import React, { useContext } from "react";
-import { NavLink, useNavigate } from "react-router-dom"; // Đảm bảo sử dụng useNavigate
+import { NavLink, useNavigate } from "react-router-dom";
 import { FaSignInAlt, FaUserPlus, FaShoppingCart, FaSignOutAlt, FaExclamationTriangle } from "react-icons/fa";
 import Button from "react-bootstrap/Button";
 import Collapse from "react-bootstrap/Collapse";
 import { useSelector } from "react-redux";
-import { UserContext } from "../../UserContext"; // Import UserContext
+import { UserContext } from "../../UserContext";
 import axios from "axios";
 import { message } from 'antd';
 
 const Navbar = () => {
   const state = useSelector((state) => state.cart);
   const [open, setOpen] = React.useState(false);
-  const { user, setUser } = useContext(UserContext); // Lấy thông tin người dùng từ UserContext
-  const navigate = useNavigate(); // Sử dụng hook navigate
+  const { user, setUser } = useContext(UserContext);
+  const navigate = useNavigate();
 
   const handleNavLinkClick = () => {
     setOpen(false);
   };
 
   const handleLogout = () => {
-    setUser(null); // Xóa thông tin người dùng
-    localStorage.removeItem("user"); // Xóa dữ liệu trong localStorage
+    setUser(null);
+    localStorage.removeItem("user");
     localStorage.removeItem("token");
-    navigate("/login"); // Chuyển hướng về trang đăng nhập sau khi đăng xuất
+    navigate("/login");
+  };
+
+  const downloadFile = (data, filename) => {
+    const element = document.createElement("a");
+    const file = new Blob([data], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = filename;
+    document.body.appendChild(element);
+    element.click();
   };
 
   const handleReportKeyLeak = async () => {
@@ -31,10 +40,10 @@ const Navbar = () => {
       const response = await axios.post("http://localhost:3000/api/report-key-leak", {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
+
       if (response.status === 200) {
         message.success('Public key updated successfully. Please save your new private key.');
-        alert(`New Private Key: ${response.data.privateKey}\nNew Public Key: ${response.data.publicKey}`);
+        downloadFile(response.data.privateKey, 'newPrivateKey.pem');
       } else {
         message.error('Failed to update public key.');
       }

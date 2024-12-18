@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
+import formatCurrency from '../../utils/formatCurrency';
 
 const Information = () => {
   const [formData, setFormData] = useState({
@@ -8,13 +9,12 @@ const Information = () => {
     email: '',
     phone: '',
     address: '',
-    productName: '',
-    quantity: 1
+    items: [],
+    total: 0,
+    shipping: 30000
   });
   const [signature, setSignature] = useState('');
-  const [privateKey, setPrivateKey] = useState('');
-  const [publicKey, setPublicKey] = useState(''); // Thêm state để lưu khóa công khai ngắn gọn
-  const [error, setError] = useState(null); // Để lưu thông báo lỗi
+  const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,11 +46,12 @@ const Information = () => {
       });
 
     if (location.state) {
-      const { total, shipping, items } = location.state;
+      const { items, total, shipping } = location.state;
       setFormData((prevData) => ({
         ...prevData,
-        productName: items.map(item => item.name).join(', '),
-        quantity: items.reduce((acc, item) => acc + item.qty, 0)
+        items,
+        total,
+        shipping
       }));
     }
   }, [navigate, location]);
@@ -59,24 +60,36 @@ const Information = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const downloadFile = (data, filename) => {
+    const element = document.createElement("a");
+    const file = new Blob([data], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = filename;
+    document.body.appendChild(element);
+    element.click();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return; // Ngăn chặn gửi nhiều lần
-    setIsSubmitting(true); // Đặt trạng thái đang gửi
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const { name, email, phone, address, productName, quantity } = formData;
+      const { name, email, phone, address, items, total, shipping } = formData;
       const { data } = await axios.post('http://localhost:3000/api/information', {
         data: `${name}${email}${phone}${address}`,
-        productName,
-        quantity
+        items,
+        total,
+        shipping
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSignature(data.signature);
-      setPrivateKey(data.privateKey);
-      setPublicKey(data.publicKey); // Lưu khóa công khai ngắn gọn vào state
-      alert(`Signature: ${data.signature}\nPrivate Key: ${data.privateKey}\nPublic Key: ${data.publicKey}`);
+
+      // Automatically download the private key
+      downloadFile(data.privateKey, 'privateKey.pem');
+
+      alert(`Signature: ${data.signature}`);
       navigate('/confirmation');
     } catch (error) {
       console.error('Error during checkout:', error.message);
@@ -104,28 +117,30 @@ const Information = () => {
           </div>
         ))}
         <div className="mb-3">
-          <label htmlFor="productName" className="form-label">Product Name</label>
-          <input
-            type="text"
-            className="form-control"
-            id="productName"
-            name="productName"
-            value={formData.productName}
-            onChange={handleInputChange}
-            required
-          />
-        </div>
-        <div className="mb-3">
-          <label htmlFor="quantity" className="form-label">Quantity</label>
-          <input
-            type="number"
-            className="form-control"
-            id="quantity"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleInputChange}
-            required
-          />
+          <label className="form-label">Order Summary</label>
+          <ul className="list-group">
+            {formData.items.map((item, index) => (
+              <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <h6>{item.name}</h6>
+                  <small>Quantity: {item.qty}</small>
+                </div>
+                <span>{formatCurrency(item.price * item.qty)}</span>
+              </li>
+            ))}
+            <li className="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <h6>Shipping</h6>
+              </div>
+              <span>{formatCurrency(formData.shipping)}</span>
+            </li>
+            <li className="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <h6>Total</h6>
+              </div>
+              <span>{formatCurrency(formData.total)}</span>
+            </li>
+          </ul>
         </div>
         <button type="submit" className="btn btn-primary">Submit</button>
       </form>
@@ -133,18 +148,6 @@ const Information = () => {
         <div className="mt-3">
           <h5>Signature:</h5>
           <p>{signature}</p>
-        </div>
-      )}
-      {privateKey && (
-        <div className="mt-3">
-          <h5>Private Key:</h5>
-          <p>{privateKey}</p>
-        </div>
-      )}
-      {publicKey && (
-        <div className="mt-3">
-          <h5>Public Key:</h5>
-          <p>{publicKey}</p>
         </div>
       )}
     </div>

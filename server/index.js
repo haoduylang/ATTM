@@ -3,7 +3,7 @@ const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { generateKeyPair, sign, verify, hashPublicKey} = require('./ciphers/DigitalSignatureUtil'); // Import các hàm từ DigitalSignatureUtil
+const { generateKeyPair, sign, verify } = require('./ciphers/DigitalSignatureUtil');
 
 // Kết nối cơ sở dữ liệu
 require('./connection');
@@ -42,11 +42,8 @@ app.post('/api/register', async (req, res) => {
     // Mã hóa mật khẩu
     const hashedPassword = await bcryptjs.hash(password, 10);
 
-    // Tạo khóa công khai với kích thước đủ lớn (2048 bit)
+    // Tạo cặp khóa
     const { publicKey, privateKey } = await generateKeyPair();
-
-    // Băm khóa công khai để tạo chuỗi ngắn gọn
-    const publicKeyHash = hashPublicKey(publicKey);
 
     // Tạo người dùng mới và lưu vào cơ sở dữ liệu
     const newUser = new Users({
@@ -55,13 +52,17 @@ app.post('/api/register', async (req, res) => {
       password: hashedPassword,
       phone,
       address,
-      publicKey: publicKeyHash, // Lưu khóa công khai dưới dạng băm
-      privateKey: privateKey.toString('base64') // Lưu private key dưới dạng base64
+      publicKey,
+      privateKey
     });
 
     await newUser.save();
 
-    res.status(201).json({ message: 'User registered successfully', privateKey: privateKey.toString('base64') });
+    // Trả về privateKey cho client
+    res.status(201).json({
+      message: 'User registered successfully',
+      privateKey
+    });
   } catch (error) {
     console.error("Error in /api/register:", error.message);
     res.status(500).json({ error: 'Internal server error' });
@@ -104,6 +105,7 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 const checkUserAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -212,71 +214,84 @@ app.get('/api/orders', checkUserAuth, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-// API để xử lý chữ ký điện tử và lưu trữ khóa công khai vào cơ sở dữ liệu
 
+// API để xử lý chữ ký điện tử và lưu trữ khóa công khai vào cơ sở dữ liệu
 app.post('/api/information', checkUserAuth, async (req, res) => {
   try {
-    const { data, productName, quantity } = req.body;
+    const { data, items, total, shipping } = req.body;
+    const user = await Users.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-    // Tạo cặp khóa với kích thước đủ lớn (2048 bit)
-    const { publicKey, privateKey } = await generateKeyPair();
+    // Concatenate product names
+    const productName = items.map(item => item.name).join(', ');
 
-    // Băm khóa công khai để tạo chuỗi ngắn gọn
-    const publicKeyHash = hashPublicKey(publicKey);
+    // Sign data
+    const signature = sign(data, user.privateKey);
 
-    // Ký dữ liệu
-    const signature = sign(data, privateKey);
-
-    // Tạo đơn hàng mới và lưu vào cơ sở dữ liệu
+    // Create new order and save to database
     const newOrder = new Orders({
       user: req.user._id,
       productName,
-      quantity,
-      publicKey: publicKeyHash // Lưu khóa công khai dưới dạng băm
+      quantity: items.reduce((acc, item) => acc + item.qty, 0),
+      total,
+      shipping,
+      signature
     });
 
     await newOrder.save();
 
-    // Trả về chữ ký và privateKey cho người dùng
-    res.status(200).json({ signature, privateKey: privateKey.toString('base64'), publicKey: publicKeyHash });
+    // Return signature and private key to user
+    res.status(200).json({ signature, privateKey: user.privateKey });
   } catch (error) {
     console.error("Error in /api/information:", error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 // verify token
 app.get('/api/verify-token', checkUserAuth, (req, res) => {
   res.status(200).json({ message: "Token is valid" });
 });
 
-const crypto = require('crypto');
-
-
-
 // API để xử lý đơn hàng
 app.post('/api/orders', checkUserAuth, async (req, res) => {
-    try {
-      const { items, total, shipping } = req.body;
-  
-      // Tạo đơn hàng mới và lưu vào cơ sở dữ liệu
-      const newOrder = new Orders({
-        user: req.user._id,
-        items,
-        total,
-        shipping,
-        orderDate: new Date(),
-        signature,
-      });
-  
-      await newOrder.save();
-  
-      res.status(200).json({ success: true, order: newOrder });
-    } catch (error) {
-      console.error("Error in /api/orders:", error.message);
-      res.status(500).json({ error: 'Internal server error' });
+  try {
+    const { items, total, shipping } = req.body;
+    const user = req.user;
+
+    if (!items || !total || !shipping) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
-  });
+
+    // Concatenate product names
+    const productName = items.map(item => item.name).join(', ');
+
+    // Create data string for signing
+    const data = `${user.fullname}${user.email}${user.phone}${user.address}${productName}${total}${shipping}`;
+
+    // Sign data
+    const signature = sign(data, user.privateKey);
+
+    // Create new order and save to database
+    const newOrder = new Orders({
+      user: user._id,
+      productName,
+      quantity: items.reduce((acc, item) => acc + item.qty, 0),
+      total,
+      shipping,
+      signature
+    });
+
+    await newOrder.save();
+
+    res.status(201).json({ message: 'Order created successfully', signature });
+  } catch (error) {
+    console.error("Error in /api/orders:", error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
   
 
 // Route để thêm sản phẩm vào giỏ hàng
@@ -409,15 +424,35 @@ app.post('/api/report-key-leak', checkUserAuth, async (req, res) => {
     // Phát sinh cặp khóa mới
     const { publicKey, privateKey } = await generateKeyPair();
 
-    // Băm khóa công khai để tạo chuỗi ngắn gọn
-    const publicKeyHash = hashPublicKey(publicKey);
-
-    user.publicKey = publicKeyHash;
+    user.publicKey = publicKey;
+    user.privateKey = privateKey;
     await user.save();
 
-    res.status(200).json({ message: 'Public key updated successfully', privateKey: privateKey.toString('base64'), publicKey: publicKeyHash });
+    res.status(200).json({ message: 'Public key updated successfully', privateKey });
   } catch (error) {
     console.error("Error in /api/report-key-leak:", error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+app.post('/api/verify-private-key', checkUserAuth, async (req, res) => {
+  try {
+    const { privateKey } = req.body;
+    const user = await Users.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if the provided private key matches the user's stored private key
+    const isValid = privateKey === user.privateKey;
+
+    if (isValid) {
+      res.status(200).json({ valid: true });
+    } else {
+      res.status(400).json({ valid: false });
+    }
+  } catch (error) {
+    console.error("Error in /api/verify-private-key:", error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

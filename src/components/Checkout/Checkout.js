@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { FaCreditCard } from 'react-icons/fa';
+import axios from 'axios';
+import formatCurrency from '../../utils/formatCurrency';
 
 const Checkout = () => {
   const [totalPrice, setTotalPrice] = useState(0);
   const [shipping, setShipping] = useState(30000);
-  const [paymentStatus, setPaymentStatus] = useState(null);
   const navigate = useNavigate();
   const state = useSelector((state) => state.cart);
 
@@ -16,8 +17,24 @@ const Checkout = () => {
   }, [state, shipping]);
 
   const handlePayment = async () => {
-        navigate('/information', { state: { total: totalPrice, shipping, items: state } });
-   
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:3000/api/orders', {
+        items: state,
+        total: totalPrice,
+        shipping
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.message) {
+        navigate('/information', { state: { items: state, total: totalPrice, shipping } });
+      } else {
+        console.error('Order creation failed:', response.data.error);
+      }
+    } catch (error) {
+      console.error('Error during order creation:', error.message);
+    }
   };
 
   return (
@@ -26,49 +43,36 @@ const Checkout = () => {
       <hr />
       <div className="row">
         <div className="col-md-8">
-          <div className="card mb-4">
-            <div className="card-header">
-              <h5>Thông tin giỏ hàng</h5>
-            </div>
-            <div className="card-body">
-              {state.map((item) => (
-                <div key={item.id} className="row">
-                  <div className="col-lg-3">
-                    <img src={item.imageUrl} alt={item.name} width="100px" height="100px" />
-                  </div>
-                  <div className="col-lg-9">
-                    <h5>{item.name}</h5>
-                    <p>{item.price} x {item.qty}</p>
-                  </div>
+          <h2>Order Summary</h2>
+          <ul className="list-group">
+            {state.map((item) => (
+              <li key={item.id} className="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <h6>{item.name}</h6>
+                  <small>Quantity: {item.qty}</small>
                 </div>
-              ))}
-              <hr />
-              <div className="row">
-                <div className="col-lg-6">
-                  <h5>Tổng cộng:</h5>
-                </div>
-                <div className="col-lg-6 text-right">
-                  <h5>{totalPrice} VND</h5>
-                </div>
+                <span>{formatCurrency(item.price * item.qty)}</span>
+              </li>
+            ))}
+            <li className="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <h6>Shipping</h6>
               </div>
-              <button
-                className="btn btn-dark btn-lg btn-block"
-                onClick={handlePayment}
-              >
-                <FaCreditCard /> Thanh toán
-              </button>
-              {paymentStatus === false && (
-                <div className="alert alert-danger mt-3">
-                  Thanh toán thất bại. Vui lòng thử lại.
-                </div>
-              )}
-              {paymentStatus === true && (
-                <div className="alert alert-success mt-3">
-                  Thanh toán thành công! Đang chuyển hướng...
-                </div>
-              )}
-            </div>
-          </div>
+              <span>{formatCurrency(shipping)}</span>
+            </li>
+            <li className="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <h6>Total</h6>
+              </div>
+              <span>{formatCurrency(totalPrice)}</span>
+            </li>
+          </ul>
+        </div>
+        <div className="col-md-4">
+          <h2>Payment</h2>
+          <button className="btn btn-dark btn-lg btn-block mt-3" onClick={handlePayment}>
+            <FaCreditCard /> Pay Now
+          </button>
         </div>
       </div>
     </div>
