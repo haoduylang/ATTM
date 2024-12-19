@@ -87,7 +87,7 @@ const Information = () => {
       setSignature(data.signature);
 
       // Automatically download the private key
-      downloadFile(data.privateKey, 'privateKey.pem');
+      downloadFile(data.signature, 'signatureKey.pem');
 
       alert(`Signature: ${data.signature}`);
       navigate('/confirmation');

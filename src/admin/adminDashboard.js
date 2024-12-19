@@ -1,3 +1,4 @@
+// filepath: src/admin/adminDashboard.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -106,6 +107,7 @@ const AdminDashboard = () => {
             <th>Ngày đặt</th>
             <th>Trạng thái</th>
             <th>Yêu cầu hủy</th>
+            <th>Đã xác thực</th>
             <th>Hành động</th>
           </tr>
         </thead>
@@ -116,14 +118,15 @@ const AdminDashboard = () => {
               <td>{order.productName}</td>
               <td>{order.quantity}</td>
               <td>{new Date(order.orderDate).toLocaleDateString()}</td>
-              <td>{order.status === 'confirmed' ? 'Đã xác nhận' : 'Chưa xác nhận'}</td>
+              <td>{order.status === 'confirmed' ? 'Đã gửi yêu cầu xác thực' : 'Chưa gửi yêu cầu xác thực'}</td>
               <td>{order.cancelRequested ? 'Có' : 'Không'}</td>
+              <td>{order.isVerified ? '✔️' : '❌'}</td>
               <td>
                 <button
                   className="btn btn-success btn-sm"
                   onClick={() => handleConfirmOrder(order._id)}
                 >
-                  Xác nhận
+                  Yêu cầu xác thực
                 </button>
                 <button
                   className="btn btn-danger btn-sm ml-2"
@@ -136,7 +139,6 @@ const AdminDashboard = () => {
           ))}
         </tbody>
       </table>
-      <button className="btn btn-dark mt-3" onClick={handleLogout}>Logout</button>
     </div>
   );
 };

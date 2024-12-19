@@ -6,16 +6,20 @@ import EmptyCart from "../EmptyCart/EmptyCart";
 import formatCurrency from "../../utils/formatCurrency";
 import axios from "axios";
 import VerifyPrivateKeyModal from "../VerifyPrivateKeyModal";
+import VerifySignatureModal from "../VerifySignatureModal";
 
 const Cart = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [orders, setOrders] = useState([]); // Define orders state
+  const [signatureModalIsOpen, setSignatureModalIsOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orders, setOrders] = useState([]);
   const state = useSelector((state) => state.cart);
   const dispatch = useDispatch();
 
   const addItem = (product) => {
     dispatch(addCart(product));
   };
+
   const removeItem = (product) => {
     dispatch(delCart(product));
   };
@@ -27,14 +31,41 @@ const Cart = () => {
   const handleRequestCancelOrder = async (orderId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:3000/api/orders/request-cancel", { orderId }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setOrders(orders.filter(order => order._id !== orderId));
+      await axios.post(
+        "http://localhost:3000/api/orders/request-cancel",
+        { orderId },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setOrders(orders.filter((order) => order._id !== orderId));
     } catch (error) {
       console.error("Error requesting order cancellation:", error.message);
     }
   };
+
+  const handleVerifySignature = (order) => {
+    setSelectedOrder(order);
+    setSignatureModalIsOpen(true);
+  };
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await axios.get("http://localhost:3000/api/orders", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setOrders(response.data);
+      } catch (error) {
+        console.error("Error fetching orders:", error.message);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   return (
     <div className="container my-3 py-3 r">
@@ -150,22 +181,36 @@ const Cart = () => {
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}
       />
+
       {orders.length > 0 && (
         <div className="container my-3 py-3">
           <h2 className="text-center">Your Orders</h2>
           <hr />
           <div className="row">
-            {orders.map(order => (
+            {orders.map((order) => (
               <div key={order._id} className="col-md-4 mb-4">
                 <div className="card">
                   <div className="card-body">
                     <h5 className="card-title">Order ID: {order._id}</h5>
                     <p className="card-text">Product Name: {order.productName}</p>
                     <p className="card-text">Quantity: {order.quantity}</p>
-                    <p className="card-text">Order Date: {new Date(order.orderDate).toLocaleDateString()}</p>
-                    <p className="card-text">Status: {order.status === 'confirmed' ? 'Confirmed' : 'Pending'}</p> {/* Hiển thị trạng thái xác nhận */}
+                    <p className="card-text">
+                      Order Date: {new Date(order.orderDate).toLocaleDateString()}
+                    </p>
+                    <p className="card-text">Status: {order.status}</p>
+                    {order.cancelRequested && (
+                      <p className="text-warning">Cancel Requested</p>
+                    )}
+                    {order.status === "confirmed" && (
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => handleVerifySignature(order)}
+                      >
+                        Verify Signature
+                      </button>
+                    )}
                     <button
-                      className="btn btn-danger"
+                      className="btn btn-danger mt-2"
                       onClick={() => handleRequestCancelOrder(order._id)}
                     >
                       Delete Order
@@ -176,6 +221,13 @@ const Cart = () => {
             ))}
           </div>
         </div>
+      )}
+      {selectedOrder && (
+        <VerifySignatureModal
+          isOpen={signatureModalIsOpen}
+          onRequestClose={() => setSignatureModalIsOpen(false)}
+          order={selectedOrder}
+        />
       )}
     </div>
   );

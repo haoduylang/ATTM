@@ -256,43 +256,26 @@ app.get('/api/verify-token', checkUserAuth, (req, res) => {
 });
 
 // API để xử lý đơn hàng
+// filepath: /d:/game/ATTM/server/index.js
+
 app.post('/api/orders', checkUserAuth, async (req, res) => {
   try {
-    const { items, total, shipping } = req.body;
-    const user = req.user;
+    const { productName, quantity, signatureKey } = req.body;
 
-    if (!items || !total || !shipping) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Concatenate product names
-    const productName = items.map(item => item.name).join(', ');
-
-    // Create data string for signing
-    const data = `${user.fullname}${user.email}${user.phone}${user.address}${productName}${total}${shipping}`;
-
-    // Sign data
-    const signature = sign(data, user.privateKey);
-
-    // Create new order and save to database
     const newOrder = new Orders({
-      user: user._id,
+      user: req.user._id,
       productName,
-      quantity: items.reduce((acc, item) => acc + item.qty, 0),
-      total,
-      shipping,
-      signature
+      quantity,
+      signatureKey // Lưu signatureKey vào đơn hàng
     });
 
     await newOrder.save();
-
-    res.status(201).json({ message: 'Order created successfully', signature });
+    res.status(201).json({ message: 'Order created successfully' });
   } catch (error) {
     console.error("Error in /api/orders:", error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-  
 
 // Route để thêm sản phẩm vào giỏ hàng
 app.post('/api/cart', checkUserAuth, async (req, res) => {
@@ -456,7 +439,41 @@ app.post('/api/verify-private-key', checkUserAuth, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+app.post('/api/verify-signature', checkUserAuth, async (req, res) => {
+  try {
+    const { orderId, signature } = req.body;
 
+    const order = await Orders.findById(orderId).populate('user');
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Ensure the order belongs to the authenticated user
+    if (order.user._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    // Prepare data to verify (adjust this as per your signing process)
+    const data = `${order.user.fullname}${order.user.email}${order.user.phone}${order.user.address}`;
+
+    // Verify the signature using the user's public key
+    const isValid = verify(data, signature, order.user.publicKey);
+
+    if (isValid) {
+      // Update order status and set isVerified to true
+      order.status = 'verified';
+      order.isVerified = true;
+      await order.save();
+      res.status(200).json({ valid: true });
+    } else {
+      res.status(400).json({ valid: false });
+    }
+  } catch (error) {
+    console.error('Error in /api/verify-signature:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 // ---------------------- SERVER ----------------------
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

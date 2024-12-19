@@ -17,24 +17,9 @@ const Checkout = () => {
   }, [state, shipping]);
 
   const handlePayment = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:3000/api/orders', {
-        items: state,
-        total: totalPrice,
-        shipping
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.message) {
+    
         navigate('/information', { state: { items: state, total: totalPrice, shipping } });
-      } else {
-        console.error('Order creation failed:', response.data.error);
-      }
-    } catch (error) {
-      console.error('Error during order creation:', error.message);
-    }
+      
   };
 
   return (
